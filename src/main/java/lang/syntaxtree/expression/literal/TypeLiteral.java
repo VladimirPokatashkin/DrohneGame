@@ -1,13 +1,13 @@
-package lang.syntaxtree.expression;
+package lang.syntaxtree.expression.literal;
 
+import lang.enums.DataType;
 import lang.visitor.ASTVisitor;
 
-public record TypeComparasionNode(
+public record TypeLiteral(
 		int line,
 		int column,
-		Expression left,
-		Expression right
-) implements Expression {
+		DataType value
+) implements LiteralNode {
 	@Override
 	public <T> T accept(ASTVisitor<T> visitor) {
 		return visitor.visit(this);

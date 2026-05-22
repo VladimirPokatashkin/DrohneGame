@@ -3,16 +3,21 @@ package lang.visitor;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
 import lang.syntaxtree.both.DrohneSingleCommandNode;
 import lang.syntaxtree.expression.*;
+import lang.syntaxtree.expression.literal.*;
 import lang.syntaxtree.statement.*;
 
 public interface ASTVisitor<T> {
 	T visit(DrohneCommandSeqNode node);
 	T visit(DrohneSingleCommandNode node);
+	T visit(BooleanLiteral node);
+	T visit(CellLiteral node);
+	T visit(IntLiteral node);
+	T visit(TypeLiteral node);
 	T visit(ArrayAccessNode node);
 	T visit(BinExprNode node);
 	T visit(CellPropertyAccess node);
 	T visit(FuncCallNode node);
-	T visit(TypeComparasionNode node);
+	T visit(TypeComparisonNode node);
 	T visit(UnExpressionNode node);
 	T visit(VarAccessNode node);
 	T visit(ArrayDeclNode node);

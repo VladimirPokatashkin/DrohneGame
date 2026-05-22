@@ -7,6 +7,10 @@ import lang.enums.UnOperator;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
 import lang.syntaxtree.both.DrohneSingleCommandNode;
 import lang.syntaxtree.expression.*;
+import lang.syntaxtree.expression.literal.BooleanLiteral;
+import lang.syntaxtree.expression.literal.CellLiteral;
+import lang.syntaxtree.expression.literal.IntLiteral;
+import lang.syntaxtree.expression.literal.TypeLiteral;
 import lang.syntaxtree.statement.*;
 import lang.visitor.ASTVisitor;
 import lombok.NoArgsConstructor;
@@ -47,6 +51,26 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(DrohneSingleCommandNode node) {
 		return node.type().ordinal() > 6 ? DataType.RIPPOTAI : null;
+	}
+
+	@Override
+	public DataType visit(BooleanLiteral node) {
+		return DataType.RONRI;
+	}
+
+	@Override
+	public DataType visit(CellLiteral node) {
+		return DataType.RIPPOTAI;
+	}
+
+	@Override
+	public DataType visit(IntLiteral node) {
+		return DataType.SEISU;
+	}
+
+	@Override
+	public DataType visit(TypeLiteral node) {
+		return node.value();
 	}
 
 	@Override
@@ -101,7 +125,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	}
 
 	@Override
-	public DataType visit(TypeComparasionNode node) {
+	public DataType visit(TypeComparisonNode node) {
 		return DataType.RONRI;
 	}
 
