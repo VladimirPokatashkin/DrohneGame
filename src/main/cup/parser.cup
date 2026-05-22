@@ -8,12 +8,21 @@ import lang.enums.*;
 import other.Pair;
 import java.util.ArrayList;
 import java.util.List;
+import lang.exceptions.SyntaxException;
 
 parser code {:
+    @Override
     public void syntax_error(Symbol cur_token) {
-        System.err.println("syntax error: unexpected token \"" +
+        throw new SyntaxException("syntax error: unexpected token \"" +
                            cur_token.value + "\" on line " +
-                           cur_token.left + ", column " + cur_token.right);
+                           cur_token.left + ", column " + cur_token.right + ".");
+    }
+
+    @Override
+    public void unrecovered_syntax_error(Symbol cur_token) {
+        throw new SyntaxException("syntax error: unrecovered parsing error near token \"" +
+                           cur_token.value + "\" on line " +
+                           cur_token.left + ", column " + cur_token.right + ".");
     }
 
     private int parseHex(String hex) {
@@ -37,30 +46,35 @@ terminal ARROW, SEMI, COLON, COMMA, ASSIGN;
 terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN;
 terminal PLUS, MINUS, NOT, AND, OR, LESS, GREATER;
 
-
 non terminal ProgramNode program;
 non terminal List<Statement> statement_list;
 non terminal Statement statement;
 non terminal Expression expression;
 
+non terminal DrohneCommandSeqNode drohne_command_sequence;
+non terminal ArrayDeclNode array_declaration;
+non terminal FuncDeclNode function_declaration;
+non terminal FuncCallNode function_call;
+non terminal IfNode if_statement;
 non terminal LoopNode loop_statement;
 non terminal VarDeclNode var_declaration;
+non terminal VarAssignationNode var_assignation;
 non terminal DataType type_specifier;
+
+non terminal DrohneCommandType single_drohne_command;
+non terminal List<DrohneCommandType> drohne_command_list;
 
 non terminal List<Expression> expression_list;
 non terminal List<Expression> opt_expression_list;
-
 non terminal Pair<DataType, String> parameter;
 non terminal List<Pair<DataType, String>> parameter_list;
 non terminal List<Pair<DataType, String>> opt_parameter_list;
-
 
 precedence left OR;
 precedence left AND;
 precedence left LESS, GREATER;
 precedence left PLUS, MINUS;
 precedence right NOT;
-
 
 start with program;
 
@@ -69,21 +83,19 @@ program ::= statement_list:sl
 ;
 
 statement_list ::= statement_list:sl statement:s
-    {: sl.add(s); RESULT = sl; :}
-    | /* empty */
-    {: RESULT = new ArrayList<Statement>(); :}
+      {: sl.add(s); RESULT = sl; :}
+    |
+      {: RESULT = new ArrayList<Statement>(); :}
 ;
-
 
 opt_expression_list ::=
       expression_list:list
       {: RESULT = list; :}
-    | /* empty */
+    |
       {: RESULT = new ArrayList<Expression>(); :}
 ;
 
-expression_list ::=
-      expression_list:list COMMA expression:e
+expression_list ::= expression_list:list COMMA expression:e
       {:
          list.add(e);
          RESULT = list;
@@ -96,13 +108,11 @@ expression_list ::=
       :}
 ;
 
-
 parameter ::= type_specifier:t IDENTIFIER:id
     {: RESULT = new Pair<>(t, id); :}
 ;
 
-parameter_list ::=
-      parameter_list:list COMMA parameter:p
+parameter_list ::= parameter_list:list COMMA parameter:p
       {: list.add(p); RESULT = list; :}
     | parameter:p
       {:
@@ -112,19 +122,31 @@ parameter_list ::=
       :}
 ;
 
-opt_parameter_list ::=
-      parameter_list:list {: RESULT = list; :}
-    | /* empty */         {: RESULT = new ArrayList<>(); :}
+opt_parameter_list ::= parameter_list:list
+      {: RESULT = list; :}
+    |
+      {: RESULT = new ArrayList<>(); :}
 ;
 
+drohne_command_list ::= drohne_command_list:list COMMA single_drohne_command:c
+      {: list.add(c); RESULT = list; :}
+    | single_drohne_command:c
+      {:
+         List<DrohneCommandType> list = new ArrayList<>();
+         list.add(c);
+         RESULT = list;
+      :}
+;
 
 statement ::=
-      array_declaration:a           {: RESULT = a; :}
-    | function_declaration:f        {: RESULT = f; :}
-    | if_statement:i                {: RESULT = i; :}
-    | loop_statement:l              {: RESULT = l; :}
-    | var_assignation:v             {: RESULT = v; :}
-    | var_declaration:v             {: RESULT = v; :}
+      drohne_command_sequence:s SEMI {: RESULT = s; :}
+    | array_declaration:a            {: RESULT = a; :}
+    | function_declaration:f         {: RESULT = f; :}
+    | if_statement:i                 {: RESULT = i; :}
+    | loop_statement:l               {: RESULT = l; :}
+    | var_assignation:v              {: RESULT = v; :}
+    | var_declaration:v              {: RESULT = v; :}
+    | function_call:c SEMI           {: RESULT = c; :}
 ;
 
 type_specifier ::=
@@ -134,8 +156,35 @@ type_specifier ::=
     | HAIRETSU {: RESULT = DataType.HAIRETSU; :}
 ;
 
-array_declaration ::= HAIRETSU IDENTIFIER:id ASSIGN LBRACE expression_list:sizes RBRACE SEMI
+single_drohne_command ::=
+      BREAK_SEQ      {: RESULT = DrohneCommandType.BREAK_SEQ; :}
+    | MOVE_UP        {: RESULT = DrohneCommandType.MOVE_UP; :}
+    | MOVE_DOWN      {: RESULT = DrohneCommandType.MOVE_DOWN; :}
+    | MOVE_LEFT      {: RESULT = DrohneCommandType.MOVE_LEFT; :}
+    | MOVE_RIGHT     {: RESULT = DrohneCommandType.MOVE_RIGHT; :}
+    | MOVE_FORWARD   {: RESULT = DrohneCommandType.MOVE_FORWARD; :}
+    | MOVE_BACK      {: RESULT = DrohneCommandType.MOVE_BACK; :}
+    | SCAN_UP        {: RESULT = DrohneCommandType.SCAN_UP; :}
+    | SCAN_DOWN      {: RESULT = DrohneCommandType.SCAN_DOWN; :}
+    | SCAN_LEFT      {: RESULT = DrohneCommandType.SCAN_LEFT; :}
+    | SCAN_RIGHT     {: RESULT = DrohneCommandType.SCAN_RIGHT; :}
+    | SCAN_FORWARD   {: RESULT = DrohneCommandType.SCAN_FORWARD; :}
+    | SCAN_BACK      {: RESULT = DrohneCommandType.SCAN_BACK; :}
+    | GET_POS        {: RESULT = DrohneCommandType.GET_POS; :}
+;
+
+
+drohne_command_sequence ::= LBRACE drohne_command_list:list RBRACE
     {:
+       RESULT = new DrohneCommandSeqNode(listleft, listright, list);
+    :}
+;
+
+array_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN LBRACE expression_list:sizes RBRACE SEMI
+    {:
+       if (t != DataType.HAIRETSU) {
+           throw new SyntaxException("syntax error: array must be of type \"hairetsu\" on line " + tleft + ", column " + tright + ".");
+       }
        RESULT = new ArrayDeclNode(idleft, idright, id, sizes);
     :}
 ;
@@ -144,6 +193,12 @@ function_declaration ::=
     type_specifier:retType KANSU IDENTIFIER:id LPAREN opt_parameter_list:params RPAREN KIDO statement_list:body SHUSHI
     {:
         RESULT = new FuncDeclNode(idleft, idright, id, retType, params, body);
+    :}
+;
+
+function_call ::= IDENTIFIER:id LPAREN opt_expression_list:args RPAREN
+    {:
+        RESULT = new FuncCallNode(idleft, idright, id, args);
     :}
 ;
 
@@ -171,13 +226,12 @@ var_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN expression:expr SEMI
     :}
 ;
 
-/* Выражения */
 expression ::=
       DEC_NUMBER:num
-      {: RESULT = new IntLiteral(numleft, numright, num); :}
+      {: RESULT = new IntLiteralNode(numleft, numright, num); :}
 
     | HEX_NUMBER:num
-      {: RESULT = new IntLiteral(numleft, numright, parseHex(num)); :}
+      {: RESULT = new IntLiteralNode(numleft, numright, parseHex(num)); :}
 
     | SHINRI
       {: RESULT = new BoolLiteralNode(true); :}
@@ -206,7 +260,7 @@ expression ::=
     | expression:e1 GREATER expression:e2
       {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.GREATER); :}
 
-    | NOT expression:e // Исправлено: EXPRESSION на expression
+    | NOT expression:e
       {: RESULT = new UnExprNode(eleft, eright, e, UnOperator.NOT); :}
 
     | JIGEN IDENTIFIER:id
@@ -223,16 +277,14 @@ expression ::=
             case "y" -> property = CellProperty.Y;
             case "z" -> property = CellProperty.Z;
             case "isObstacle" -> property = CellProperty.IS_OBSTACLE;
-            default: throw new SyntaxException("syntax error: unexpected cell property \"" + p
-                + "\" on line " + pleft + ", column " + pright);
+            default -> throw new SyntaxException("syntax error: unexpected cell property \"" + p
+                + "\" on line " + pleft + ", column " + pright + ".");
          }
          RESULT = new CellPropertyAccess(cellleft, cellright, cell, property);
       :}
 
-    | IDENTIFIER:id LPAREN opt_expression_list:args RPAREN
-      {:
-         RESULT = new FuncCallNode(idleft, idright, id, args);
-      :}
+    | function_call:c
+      {: RESULT = c; :}
 
     | RUIKEI LBRACE expression:first expression:second RBRACE
       {:
@@ -241,4 +293,7 @@ expression ::=
 
     | IDENTIFIER:id
       {: RESULT = new VarAccessNode(idleft, idright, id); :}
+
+    | drohne_command_sequence:seq
+      {: RESULT = seq; :}
 ;
