@@ -4,8 +4,9 @@ import lang.enums.BinOperator;
 import lang.enums.CellProperty;
 import lang.enums.DataType;
 import lang.enums.UnOperator;
+import lang.exceptions.SemanticException;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
-import lang.syntaxtree.both.DrohneSingleCommandNode;
+import lang.syntaxtree.both.FuncCallNode;
 import lang.syntaxtree.expression.*;
 import lang.syntaxtree.expression.literal.BooleanLiteral;
 import lang.syntaxtree.expression.literal.CellLiteral;
@@ -39,18 +40,8 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 
 	@Override
 	public DataType visit(DrohneCommandSeqNode node) {
-		boolean hasScan = false;
-		for (var command : node.commands()) {
-			if (command.accept(this) == DataType.RIPPOTAI) {
-				hasScan = true;
-			}
-		}
+		boolean hasScan = node.commands().stream().anyMatch(cmd -> cmd.ordinal() > 6);
 		return hasScan ? DataType.RIPPOTAI : null;
-	}
-
-	@Override
-	public DataType visit(DrohneSingleCommandNode node) {
-		return node.type().ordinal() > 6 ? DataType.RIPPOTAI : null;
 	}
 
 	@Override
