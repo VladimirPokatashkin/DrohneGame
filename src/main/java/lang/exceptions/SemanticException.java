@@ -1,4 +1,4 @@
-package lang.visitor.semantic;
+package lang.exceptions;
 
 public class SemanticException extends RuntimeException {
 	public SemanticException(String message) {
