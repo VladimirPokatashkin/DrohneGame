@@ -83,7 +83,7 @@ HexLiteral     = x[0-9A-F]+
   {DecLiteral}   { return symbol(sym.DEC_NUMBER, Integer.parseInt(yytext())); }
   {Identifier}   { return symbol(sym.IDENTIFIER, yytext()); }
 
-  {WhiteSpace}   { }
+  {Space}   { }
 }
 
 [^]              { throw new Error("Illegal character <"+yytext()+"> at line " + yyline); }

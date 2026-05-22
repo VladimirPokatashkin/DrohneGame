@@ -1,0 +1,244 @@
+package lang.parser;
+
+import java_cup.runtime.*;
+import lang.syntaxtree.statement.*;
+import lang.syntaxtree.expression.*;
+import lang.syntaxtree.both.*;
+import lang.enums.*;
+import other.Pair;
+import java.util.ArrayList;
+import java.util.List;
+
+parser code {:
+    public void syntax_error(Symbol cur_token) {
+        System.err.println("syntax error: unexpected token \"" +
+                           cur_token.value + "\" on line " +
+                           cur_token.left + ", column " + cur_token.right);
+    }
+
+    private int parseHex(String hex) {
+        return Integer.parseInt(hex.substring(1), 16);
+    }
+:}
+
+terminal SEISU, RONRI, RIPPOTAI, HAIRETSU, JIGEN, RUIKEI;
+terminal SHUKI, KIDO, SHUSHI, SORENARA, KANSU;
+
+terminal String IDENTIFIER;
+terminal Integer DEC_NUMBER;
+terminal String HEX_NUMBER;
+terminal SHINRI, USO;
+
+terminal MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT, MOVE_FORWARD, MOVE_BACK;
+terminal SCAN_UP, SCAN_DOWN, SCAN_LEFT, SCAN_RIGHT, SCAN_FORWARD, SCAN_BACK;
+terminal BREAK_SEQ, GET_POS;
+
+terminal ARROW, SEMI, COLON, COMMA, ASSIGN;
+terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN;
+terminal PLUS, MINUS, NOT, AND, OR, LESS, GREATER;
+
+
+non terminal ProgramNode program;
+non terminal List<Statement> statement_list;
+non terminal Statement statement;
+non terminal Expression expression;
+
+non terminal LoopNode loop_statement;
+non terminal VarDeclNode var_declaration;
+non terminal DataType type_specifier;
+
+non terminal List<Expression> expression_list;
+non terminal List<Expression> opt_expression_list;
+
+non terminal Pair<DataType, String> parameter;
+non terminal List<Pair<DataType, String>> parameter_list;
+non terminal List<Pair<DataType, String>> opt_parameter_list;
+
+
+precedence left OR;
+precedence left AND;
+precedence left LESS, GREATER;
+precedence left PLUS, MINUS;
+precedence right NOT;
+
+
+start with program;
+
+program ::= statement_list:sl
+    {: RESULT = new ProgramNode(new ArrayList<>(), sl); :}
+;
+
+statement_list ::= statement_list:sl statement:s
+    {: sl.add(s); RESULT = sl; :}
+    | /* empty */
+    {: RESULT = new ArrayList<Statement>(); :}
+;
+
+
+opt_expression_list ::=
+      expression_list:list
+      {: RESULT = list; :}
+    | /* empty */
+      {: RESULT = new ArrayList<Expression>(); :}
+;
+
+expression_list ::=
+      expression_list:list COMMA expression:e
+      {:
+         list.add(e);
+         RESULT = list;
+      :}
+    | expression:e
+      {:
+         List<Expression> list = new ArrayList<>();
+         list.add(e);
+         RESULT = list;
+      :}
+;
+
+
+parameter ::= type_specifier:t IDENTIFIER:id
+    {: RESULT = new Pair<>(t, id); :}
+;
+
+parameter_list ::=
+      parameter_list:list COMMA parameter:p
+      {: list.add(p); RESULT = list; :}
+    | parameter:p
+      {:
+         List<Pair<DataType, String>> list = new ArrayList<>();
+         list.add(p);
+         RESULT = list;
+      :}
+;
+
+opt_parameter_list ::=
+      parameter_list:list {: RESULT = list; :}
+    | /* empty */         {: RESULT = new ArrayList<>(); :}
+;
+
+
+statement ::=
+      array_declaration:a           {: RESULT = a; :}
+    | function_declaration:f        {: RESULT = f; :}
+    | if_statement:i                {: RESULT = i; :}
+    | loop_statement:l              {: RESULT = l; :}
+    | var_assignation:v             {: RESULT = v; :}
+    | var_declaration:v             {: RESULT = v; :}
+;
+
+type_specifier ::=
+      SEISU    {: RESULT = DataType.SEISU; :}
+    | RONRI    {: RESULT = DataType.RONRI; :}
+    | RIPPOTAI {: RESULT = DataType.RIPPOTAI; :}
+    | HAIRETSU {: RESULT = DataType.HAIRETSU; :}
+;
+
+array_declaration ::= HAIRETSU IDENTIFIER:id ASSIGN LBRACE expression_list:sizes RBRACE SEMI
+    {:
+       RESULT = new ArrayDeclNode(idleft, idright, id, sizes);
+    :}
+;
+
+function_declaration ::=
+    type_specifier:retType KANSU IDENTIFIER:id LPAREN opt_parameter_list:params RPAREN KIDO statement_list:body SHUSHI
+    {:
+        RESULT = new FuncDeclNode(idleft, idright, id, retType, params, body);
+    :}
+;
+
+if_statement ::= SORENARA expression:cond KIDO statement_list:body SHUSHI
+    {:
+        RESULT = new IfNode(condleft, condright, cond, body);
+    :}
+;
+
+loop_statement ::= SHUKI IDENTIFIER:id ASSIGN expression:begin COLON expression:end KIDO statement_list:body SHUSHI
+    {:
+       RESULT = new LoopNode(idleft, idright, id, begin, end, body);
+    :}
+;
+
+var_assignation ::= IDENTIFIER:id ASSIGN expression:value SEMI
+    {:
+        RESULT = new VarAssignationNode(idleft, idright, id, value);
+    :}
+;
+
+var_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN expression:expr SEMI
+    {:
+       RESULT = new VarDeclNode(tleft, tright, id, t, expr);
+    :}
+;
+
+/* Выражения */
+expression ::=
+      DEC_NUMBER:num
+      {: RESULT = new IntLiteral(numleft, numright, num); :}
+
+    | HEX_NUMBER:num
+      {: RESULT = new IntLiteral(numleft, numright, parseHex(num)); :}
+
+    | SHINRI
+      {: RESULT = new BoolLiteralNode(true); :}
+
+    | USO
+      {: RESULT = new BoolLiteralNode(false); :}
+
+    | type_specifier:type
+      {: RESULT = new TypeLiteralNode(typeleft, typeright, type); :}
+
+    | expression:e1 PLUS expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.PLUS); :}
+
+    | expression:e1 MINUS expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.MINUS); :}
+
+    | expression:e1 AND expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.AND); :}
+
+    | expression:e1 OR expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.OR); :}
+
+    | expression:e1 LESS expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.LESS); :}
+
+    | expression:e1 GREATER expression:e2
+      {: RESULT = new BinExprNode(e1left, e1right, e1, e2, BinOperator.GREATER); :}
+
+    | NOT expression:e // Исправлено: EXPRESSION на expression
+      {: RESULT = new UnExprNode(eleft, eright, e, UnOperator.NOT); :}
+
+    | JIGEN IDENTIFIER:id
+      {: RESULT = new UnExprNode(idleft, idright, new VarAccessNode(idleft, idright, id), UnOperator.JIGEN); :}
+
+    | IDENTIFIER:id LBRACKET expression_list:indices RBRACKET
+      {: RESULT = new ArrayAccessNode(idleft, idright, id, indices); :}
+
+    | expression:cell ARROW IDENTIFIER:p
+      {:
+         CellProperty property;
+         switch (p) {
+            case "x" -> property = CellProperty.X;
+            case "y" -> property = CellProperty.Y;
+            case "z" -> property = CellProperty.Z;
+            case "isObstacle" -> property = CellProperty.IS_OBSTACLE;
+            default: throw new SyntaxException("syntax error: unexpected cell property \"" + p
+                + "\" on line " + pleft + ", column " + pright);
+         }
+         RESULT = new CellPropertyAccess(cellleft, cellright, cell, property);
+      :}
+
+    | IDENTIFIER:id LPAREN opt_expression_list:args RPAREN
+      {:
+         RESULT = new FuncCallNode(idleft, idright, id, args);
+      :}
+
+    | RUIKEI LBRACE expression:first expression:second RBRACE
+      {:
+        RESULT = new TypeComparisonNode(firstleft, firstright, first, second);
+      :}
+
+    | IDENTIFIER:id
+      {: RESULT = new VarAccessNode(idleft, idright, id); :}
+;
