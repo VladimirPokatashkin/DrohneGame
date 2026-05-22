@@ -6,7 +6,7 @@ import lang.visitor.ASTVisitor;
 public record CellPropertyAccess(
 		int line,
 		int column,
-		String name,
+		Expression cell,
 		CellProperty property
 ) implements Expression {
 	@Override
