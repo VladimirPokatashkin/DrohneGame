@@ -2,7 +2,7 @@ package lang.syntaxtree.expression.literal;
 
 import lang.visitor.ASTVisitor;
 
-public record IntLiteral(
+public record IntLiteralNode(
 		int line,
 		int column,
 		int value

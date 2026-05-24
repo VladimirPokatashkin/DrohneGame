@@ -1,24 +1,26 @@
-package lang.visitor.semantic;
+package lang.semanticanalyzer;
 
 import lang.enums.DataType;
 import lang.syntaxtree.statement.ArrayDeclNode;
 import lang.syntaxtree.statement.FuncDeclNode;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public record SymbolTable(
+public record SemanticSymbolTable(
 		Map<String, DataType> variables,
 		Map<String, FuncDeclNode> functions,
 		Map<String, ArrayDeclNode> arrays
 ) {
-	public SymbolTable() {
+	public SemanticSymbolTable() {
 		this(new HashMap<>(), new HashMap<>(), new HashMap<>());
 	}
 
-	public SymbolTable(SymbolTable other) {
+	public SemanticSymbolTable(Map<String, FuncDeclNode> functions) {
+		this(new HashMap<>(), functions, new HashMap<>());
+	}
+
+	public SemanticSymbolTable(SemanticSymbolTable other) {
 		this(new HashMap<>(other.variables), new HashMap<>(other.functions), new HashMap<>(other.arrays));
 	}
 

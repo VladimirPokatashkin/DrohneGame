@@ -3,7 +3,7 @@ package lang.syntaxtree.expression;
 import lang.enums.UnOperator;
 import lang.visitor.ASTVisitor;
 
-public record UnExpressionNode(
+public record UnExprNode(
 		int line,
 		int column,
 		Expression operand,

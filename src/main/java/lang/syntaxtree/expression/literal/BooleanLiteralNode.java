@@ -1,12 +1,11 @@
 package lang.syntaxtree.expression.literal;
 
-import lang.enums.DataType;
 import lang.visitor.ASTVisitor;
 
-public record TypeLiteral(
+public record BooleanLiteralNode(
 		int line,
 		int column,
-		DataType value
+		boolean value
 ) implements LiteralNode {
 	@Override
 	public <T> T accept(ASTVisitor<T> visitor) {
