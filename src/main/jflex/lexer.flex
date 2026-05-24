@@ -1,3 +1,5 @@
+package lang.parser;
+
 import java_cup.runtime.*;
 
 %%
@@ -38,6 +40,7 @@ HexLiteral     = x[0-9A-F]+
   "shushi"       { return symbol(sym.SHUSHI); }
   "sorenara"     { return symbol(sym.SORENARA); }
   "kansu"        { return symbol(sym.KANSU); }
+  "modoru"       { return symbol(sym.MODORU); }
 
   "shinri"       { return symbol(sym.SHINRI); }
   "uso"          { return symbol(sym.USO); }

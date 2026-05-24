@@ -2,6 +2,7 @@ package lang.parser;
 
 import java_cup.runtime.*;
 import lang.syntaxtree.statement.*;
+import lang.syntaxtree.expression.literal.*;
 import lang.syntaxtree.expression.*;
 import lang.syntaxtree.both.*;
 import lang.enums.*;
@@ -11,27 +12,13 @@ import java.util.List;
 import lang.exceptions.SyntaxException;
 
 parser code {:
-    @Override
-    public void syntax_error(Symbol cur_token) {
-        throw new SyntaxException("syntax error: unexpected token \"" +
-                           cur_token.value + "\" on line " +
-                           cur_token.left + ", column " + cur_token.right + ".");
-    }
-
-    @Override
-    public void unrecovered_syntax_error(Symbol cur_token) {
-        throw new SyntaxException("syntax error: unrecovered parsing error near token \"" +
-                           cur_token.value + "\" on line " +
-                           cur_token.left + ", column " + cur_token.right + ".");
-    }
-
     private int parseHex(String hex) {
         return Integer.parseInt(hex.substring(1), 16);
     }
 :}
 
 terminal SEISU, RONRI, RIPPOTAI, HAIRETSU, JIGEN, RUIKEI;
-terminal SHUKI, KIDO, SHUSHI, SORENARA, KANSU;
+terminal SHUKI, KIDO, SHUSHI, SORENARA, KANSU, MODORU;
 
 terminal String IDENTIFIER;
 terminal Integer DEC_NUMBER;
@@ -57,6 +44,7 @@ non terminal FuncDeclNode function_declaration;
 non terminal FuncCallNode function_call;
 non terminal IfNode if_statement;
 non terminal LoopNode loop_statement;
+non terminal ReturnStatementNode return_statement;
 non terminal VarDeclNode var_declaration;
 non terminal VarAssignationNode var_assignation;
 non terminal DataType type_specifier;
@@ -144,6 +132,7 @@ statement ::=
     | function_declaration:f         {: RESULT = f; :}
     | if_statement:i                 {: RESULT = i; :}
     | loop_statement:l               {: RESULT = l; :}
+    | return_statement:r             {: RESULT = r; :}
     | var_assignation:v              {: RESULT = v; :}
     | var_declaration:v              {: RESULT = v; :}
     | function_call:c SEMI           {: RESULT = c; :}
@@ -214,6 +203,12 @@ loop_statement ::= SHUKI IDENTIFIER:id ASSIGN expression:begin COLON expression:
     :}
 ;
 
+return_statement ::= MODORU expression:expr SEMI
+    {:
+       RESULT = new ReturnStatementNode(exprleft, exprright, expr);
+    :}
+;
+
 var_assignation ::= IDENTIFIER:id ASSIGN expression:value SEMI
     {:
         RESULT = new VarAssignationNode(idleft, idright, id, value);
@@ -222,7 +217,7 @@ var_assignation ::= IDENTIFIER:id ASSIGN expression:value SEMI
 
 var_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN expression:expr SEMI
     {:
-       RESULT = new VarDeclNode(tleft, tright, id, t, expr);
+       RESULT = new VarDeclNode(tleft, tright, t, id, expr);
     :}
 ;
 
@@ -233,11 +228,11 @@ expression ::=
     | HEX_NUMBER:num
       {: RESULT = new IntLiteralNode(numleft, numright, parseHex(num)); :}
 
-    | SHINRI
-      {: RESULT = new BoolLiteralNode(true); :}
+    | SHINRI:bool
+      {: RESULT = new BooleanLiteralNode(boolleft, boolright, true); :}
 
-    | USO
-      {: RESULT = new BoolLiteralNode(false); :}
+    | USO:bool
+      {: RESULT = new BooleanLiteralNode(boolleft, boolright, false); :}
 
     | type_specifier:type
       {: RESULT = new TypeLiteralNode(typeleft, typeright, type); :}

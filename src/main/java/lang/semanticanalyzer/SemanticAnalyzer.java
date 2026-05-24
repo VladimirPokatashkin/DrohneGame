@@ -1,4 +1,4 @@
-package lang.visitor.semantic;
+package lang.semanticanalyzer;
 
 import lang.enums.BinOperator;
 import lang.enums.CellProperty;
@@ -8,22 +8,24 @@ import lang.exceptions.SemanticException;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
 import lang.syntaxtree.both.FuncCallNode;
 import lang.syntaxtree.expression.*;
-import lang.syntaxtree.expression.literal.BooleanLiteral;
-import lang.syntaxtree.expression.literal.CellLiteral;
-import lang.syntaxtree.expression.literal.IntLiteral;
-import lang.syntaxtree.expression.literal.TypeLiteral;
+import lang.syntaxtree.expression.literal.*;
 import lang.syntaxtree.statement.*;
 import lang.visitor.ASTVisitor;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class SemanticAnalyzer implements ASTVisitor<DataType> {
-	private SymbolTable env = new SymbolTable();
+	private SemanticSymbolTable env = new SemanticSymbolTable();
 
 	private SemanticAnalyzer(SemanticAnalyzer other) {
-		this.env = new SymbolTable(other.env);
+		this.env = new SemanticSymbolTable(other.env);
+	}
+
+	private SemanticAnalyzer(Map<String, FuncDeclNode> functions) {
+		env = new SemanticSymbolTable(functions);
 	}
 
 	private boolean areCompatibleTypes(DataType given, DataType expected) {
@@ -37,6 +39,17 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 		scope.forEach(statement -> statement.accept(innerAnalyzer));
 	}
 
+	private void analyzeFunctionBody(FuncDeclNode node) {
+		var innerAnalyzer = new SemanticAnalyzer(this.env.functions());
+
+		for (var statement : node.body()) {
+			DataType type = statement.accept(innerAnalyzer);
+			if (statement instanceof ReturnStatementNode && !areCompatibleTypes(type, node.returnType())) {
+				throw new SemanticException("invalid type of return statement in function \"" + node.name() + "\"");
+			}
+		}
+	}
+
 
 	@Override
 	public DataType visit(DrohneCommandSeqNode node) {
@@ -45,22 +58,17 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	}
 
 	@Override
-	public DataType visit(BooleanLiteral node) {
+	public DataType visit(BooleanLiteralNode node) {
 		return DataType.RONRI;
 	}
 
 	@Override
-	public DataType visit(CellLiteral node) {
-		return DataType.RIPPOTAI;
-	}
-
-	@Override
-	public DataType visit(IntLiteral node) {
+	public DataType visit(IntLiteralNode node) {
 		return DataType.SEISU;
 	}
 
 	@Override
-	public DataType visit(TypeLiteral node) {
+	public DataType visit(TypeLiteralNode node) {
 		return node.value();
 	}
 
@@ -121,7 +129,15 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	}
 
 	@Override
-	public DataType visit(UnExpressionNode node) {
+	public DataType visit(UnExprNode node) {
+		DataType typeOfOperand = node.accept(this);
+		if (node.operator() == UnOperator.JIGEN && typeOfOperand != DataType.HAIRETSU) {
+			throw new SemanticException("invalid argument of \"jigen\" operator (it must be an array).");
+		}
+
+		if (node.operator() == UnOperator.NOT && !areCompatibleTypes(DataType.RONRI, typeOfOperand)) {
+			throw new SemanticException("invalid argument of \"not\" operator (it must be ronri or seisu).");
+		}
 		return node.operator() == UnOperator.NOT ? DataType.RONRI : DataType.SEISU;
 	}
 
@@ -148,7 +164,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 			throw new SemanticException("error: function \"" + node.name() + "\" was already declared");
 		}
 
-		analyzeInnerScope(node.body());
+		analyzeFunctionBody(node);
 		env.addFunction(node.name(), node);
 		return node.returnType();
 	}
@@ -182,8 +198,13 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(ProgramNode node) {
 		node.functions().forEach(func -> func.accept(this));
-		node.globalStatements().forEach(statement -> statement.accept(this));
+		node.statements().forEach(statement -> statement.accept(this));
 		return null;
+	}
+
+	@Override
+	public DataType visit(ReturnStatementNode node) {
+		return node.expression().accept(this);
 	}
 
 	@Override
