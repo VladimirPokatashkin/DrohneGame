@@ -44,7 +44,7 @@
                 </executions>
                 <configuration>
                     <className>Parser</className>
-                    <symbolsName>Symbol</symbolsName>
+                    <symbolsName>sym</symbolsName>
                 </configuration>
             </plugin>
 
@@ -60,7 +60,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <outputDirectory>${project.build.directory}/generated-sources/jflex/lang/parser</outputDirectory>
+                    <outputDirectory>${project.build.directory}/generated-sources/jflex/</outputDirectory>
                     <lexDefinitions>
                         <lexDefinition>src/main/jflex/lexer.flex</lexDefinition>
                     </lexDefinitions>
