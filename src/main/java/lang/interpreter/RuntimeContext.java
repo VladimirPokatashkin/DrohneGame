@@ -10,6 +10,10 @@ public record RuntimeContext(
 		Drohne drohne,
 		RuntimeSymbolTable symbolTable
 ) {
+	public RuntimeContext(RuntimeContext other) {
+		this(other.maze, other.drohne, new RuntimeSymbolTable(other.symbolTable));
+	}
+
 	public void addFunction(FuncDeclNode node) {
 		symbolTable.addFunction(node);
 	}

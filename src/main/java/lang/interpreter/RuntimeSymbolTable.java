@@ -3,12 +3,17 @@ package lang.interpreter;
 import lang.interpreter.symbols.Variable;
 import lang.syntaxtree.statement.FuncDeclNode;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public record RuntimeSymbolTable(
 		Map<String, Variable> variables,
 		Map<String, FuncDeclNode> functions
 ) {
+	public RuntimeSymbolTable(RuntimeSymbolTable other) {
+		this(new HashMap<>(), other.functions);
+	}
+
 	public Variable getVariable(String name) {
 		return variables.get(name);
 	}
