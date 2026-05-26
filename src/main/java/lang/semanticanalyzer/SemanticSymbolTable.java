@@ -9,19 +9,18 @@ import java.util.Map;
 
 public record SemanticSymbolTable(
 		Map<String, DataType> variables,
-		Map<String, FuncDeclNode> functions,
-		Map<String, ArrayDeclNode> arrays
+		Map<String, FuncDeclNode> functions
 ) {
 	public SemanticSymbolTable() {
-		this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+		this(new HashMap<>(), new HashMap<>());
 	}
 
 	public SemanticSymbolTable(Map<String, FuncDeclNode> functions) {
-		this(new HashMap<>(), functions, new HashMap<>());
+		this(new HashMap<>(), functions);
 	}
 
 	public SemanticSymbolTable(SemanticSymbolTable other) {
-		this(new HashMap<>(other.variables), new HashMap<>(other.functions), new HashMap<>(other.arrays));
+		this(new HashMap<>(other.variables), new HashMap<>(other.functions));
 	}
 
 	public boolean isVarDeclared(String name) {
@@ -32,16 +31,8 @@ public record SemanticSymbolTable(
 		return functions.containsKey(name);
 	}
 
-	public boolean isArrayDeclared(String name) {
-		return arrays.containsKey(name);
-	}
-
 	public DataType typeOf(String name) {
 		return variables.get(name);
-	}
-
-	public void addArray(String name, ArrayDeclNode array) {
-		arrays.put(name, array);
 	}
 
 	public void addVariable(String name, DataType type) {
@@ -54,9 +45,5 @@ public record SemanticSymbolTable(
 
 	public FuncDeclNode getFunction(String name) {
 		return functions.get(name);
-	}
-
-	public ArrayDeclNode getArray(String name) {
-		return arrays.get(name);
 	}
 }
