@@ -18,7 +18,7 @@ parser code {:
 :}
 
 terminal SEISU, RONRI, RIPPOTAI, HAIRETSU, JIGEN, RUIKEI;
-terminal SHUKI, KIDO, SHUSHI, SORENARA, KANSU, MODORU;
+terminal SHUKI, KIDO, SHUSHI, SORENARA, KANSU, MODORU, KOWASU;
 
 terminal String IDENTIFIER;
 terminal Integer DEC_NUMBER;
@@ -40,6 +40,7 @@ non terminal Expression expression;
 
 non terminal DrohneCommandSeqNode drohne_command_sequence;
 non terminal ArrayDeclNode array_declaration;
+non terminal BreakNode break_statement;
 non terminal FuncDeclNode function_declaration;
 non terminal FuncCallNode function_call;
 non terminal IfNode if_statement;
@@ -67,7 +68,7 @@ precedence right NOT;
 start with program;
 
 program ::= statement_list:sl
-    {: RESULT = new ProgramNode(new ArrayList<>(), sl); :}
+    {: RESULT = new ProgramNode(sl); :}
 ;
 
 statement_list ::= statement_list:sl statement:s
@@ -175,6 +176,12 @@ array_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN LBRACE expression_li
            throw new SyntaxException("syntax error: array must be of type \"hairetsu\" on line " + tleft + ", column " + tright + ".");
        }
        RESULT = new ArrayDeclNode(idleft, idright, id, sizes);
+    :}
+;
+
+break_statement ::= KOWASU:k SEMI
+    {:
+      RESULT = new BreakNode(kleft, kright);
     :}
 ;
 

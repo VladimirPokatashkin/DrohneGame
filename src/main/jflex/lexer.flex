@@ -41,6 +41,7 @@ HexLiteral     = x[0-9A-F]+
   "sorenara"     { return symbol(sym.SORENARA); }
   "kansu"        { return symbol(sym.KANSU); }
   "modoru"       { return symbol(sym.MODORU); }
+  "kowasu"       { return symbol(sym.KOWASU); }
 
   "shinri"       { return symbol(sym.SHINRI); }
   "uso"          { return symbol(sym.USO); }
