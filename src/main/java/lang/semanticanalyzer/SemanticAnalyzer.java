@@ -1,9 +1,6 @@
 package lang.semanticanalyzer;
 
-import lang.enums.BinOperator;
-import lang.enums.CellProperty;
-import lang.enums.DataType;
-import lang.enums.UnOperator;
+import lang.enums.*;
 import lang.exceptions.SemanticException;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
 import lang.syntaxtree.both.FuncCallNode;
@@ -19,6 +16,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	private SemanticSymbolTable env = new SemanticSymbolTable();
+	private int loopDepth = 0;
 
 	private SemanticAnalyzer(SemanticAnalyzer other) {
 		this.env = new SemanticSymbolTable(other.env);
@@ -66,8 +64,24 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 
 	@Override
 	public DataType visit(DrohneCommandSeqNode node) {
-		boolean hasScan = node.commands().stream().anyMatch(cmd -> cmd.ordinal() > 6);
-		return hasScan ? DataType.RIPPOTAI : null;
+		DrohneCommandType prev = null;
+		boolean hasScan = false;
+
+		for (var command : node.commands()) {
+			if (command == DrohneCommandType.BREAK_SEQ) {
+				if (prev == null || prev.ordinal() < 7 || prev.ordinal() > 12) {
+					throw new SemanticException("break sequence operator must be after scan operator");
+				}
+			}
+
+			if (command.ordinal() >= 7 && command.ordinal() <= 12) {
+				hasScan = true;
+			}
+
+			prev = command;
+		}
+
+		return hasScan ? DataType.HAIRETSU : null;
 	}
 
 	@Override
@@ -90,9 +104,11 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 		if (!env.isVarDeclared(node.name())) {
 			throw new SemanticException("error: array \"" + node.name() + "\" was not declared in this scope.");
 		}
-		if ((areCompatibleTypes(node.index().accept(this), DataType.SEISU))) {
-			throw new SemanticException("type of array index must be compatible to seisu.");
-		}
+		node.indices().forEach(index -> {
+			if ((areCompatibleTypes(index.accept(this), DataType.SEISU))) {
+				throw new SemanticException("type of array index must be compatible to seisu.");
+			}
+		});
 		return DataType.ANY;
 	}
 
@@ -169,6 +185,14 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	}
 
 	@Override
+	public DataType visit(BreakNode node) {
+		if (loopDepth == 0) {
+			throw new SemanticException("kowasu statement must be inside shuki.");
+		}
+		return null;
+	}
+
+	@Override
 	public DataType visit(FuncDeclNode node) {
 		if (env.isFuncDeclared(node.name())) {
 			throw new SemanticException("error: function \"" + node.name() + "\" was already declared");
@@ -202,15 +226,16 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 
 		var innerAnalyzer = new SemanticAnalyzer(this);
 		innerAnalyzer.env.addVariable(node.iterator(), typeOfBegin);
+		++loopDepth;
 		node.body().forEach(statement -> statement.accept(innerAnalyzer));
+		--loopDepth;
 
 		return null;
 	}
 
 	@Override
 	public DataType visit(ProgramNode node) {
-		node.functions().forEach(func -> func.accept(this));
-		node.statements().forEach(statement -> statement.accept(this));
+		node.body().forEach(statement -> statement.accept(this));
 		return null;
 	}
 

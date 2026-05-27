@@ -1,8 +1,10 @@
 package lang.interpreter;
 
 import lang.interpreter.symbols.Variable;
-import lang.structures.Drohne;
-import lang.structures.Maze;
+import other.Pair;
+import structures.Cell;
+import structures.Drohne;
+import structures.Maze;
 import lang.syntaxtree.statement.FuncDeclNode;
 
 public record RuntimeContext(
@@ -12,6 +14,10 @@ public record RuntimeContext(
 ) {
 	public RuntimeContext(RuntimeContext other) {
 		this(other.maze, other.drohne, new RuntimeSymbolTable(other.symbolTable));
+	}
+
+	public RuntimeContext(Pair<Maze, Drohne> pair) {
+		this(pair.first, pair.second, new RuntimeSymbolTable());
 	}
 
 	public void addFunction(FuncDeclNode node) {
@@ -32,5 +38,13 @@ public record RuntimeContext(
 
 	public FuncDeclNode getFunction(String name) {
 		return symbolTable.getFunction(name);
+	}
+
+	public Cell getCell(int x, int y, int z) {
+		return maze.get(x, y, z);
+	}
+
+	public boolean isCellObstacle(int x, int y, int z) {
+		return maze.isObstacle(x, y, z);
 	}
 }

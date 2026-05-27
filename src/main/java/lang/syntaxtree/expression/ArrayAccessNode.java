@@ -8,7 +8,7 @@ public record ArrayAccessNode(
 		int line,
 		int column,
 		String name,
-		Expression index
+		List<Expression> indices
 ) implements Expression {
 	@Override
 	public <T> T accept(ASTVisitor<T> visitor) {

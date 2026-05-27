@@ -14,6 +14,10 @@ public record RuntimeSymbolTable(
 		this(new HashMap<>(), other.functions);
 	}
 
+	public RuntimeSymbolTable() {
+		this(new HashMap<>(), new HashMap<>());
+	}
+
 	public Variable getVariable(String name) {
 		return variables.get(name);
 	}

@@ -9,7 +9,7 @@ public record ArrayDeclNode(
 		int line,
 		int column,
 		String name,
-		Expression size
+		List<Expression> sizes
 ) implements Statement {
 	@Override
 	public <T> T accept(ASTVisitor<T> visitor) {

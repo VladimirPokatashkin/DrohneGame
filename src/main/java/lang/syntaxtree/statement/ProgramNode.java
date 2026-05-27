@@ -5,8 +5,7 @@ import lang.visitor.ASTVisitor;
 import java.util.List;
 
 public record ProgramNode (
-		List<FuncDeclNode> functions,
-		List<Statement> statements
+		List<Statement> body
 )implements Statement {
 	@Override
 	public int line() {
