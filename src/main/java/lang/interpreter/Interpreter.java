@@ -1,9 +1,11 @@
 package lang.interpreter;
 
 import lang.enums.DataType;
+import lang.enums.DrohneCommandType;
 import lang.interpreter.symbols.Variable;
-import lang.structures.Array;
-import lang.structures.Cell;
+import service.MazeService;
+import structures.Array;
+import structures.Cell;
 import lang.syntaxtree.both.DrohneCommandSeqNode;
 import lang.syntaxtree.both.FuncCallNode;
 import lang.syntaxtree.expression.*;
@@ -12,20 +14,21 @@ import lang.syntaxtree.expression.literal.IntLiteralNode;
 import lang.syntaxtree.expression.literal.TypeLiteralNode;
 import lang.syntaxtree.statement.*;
 import lang.visitor.ASTVisitor;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @NoArgsConstructor
+@AllArgsConstructor
 public class Interpreter implements ASTVisitor<Object> {
 	private RuntimeContext context;
-
-	private Interpreter(RuntimeContext context) {
-		this.context = context;
-	}
+	private MazeService mazeService;
 
 	private Interpreter(Interpreter other) {
 		this.context = other.context;
+		this.mazeService = other.mazeService;
 	}
 
 	private boolean castToBoolean(Object val) {
@@ -40,9 +43,49 @@ public class Interpreter implements ASTVisitor<Object> {
 		throw new RuntimeException("invalid operand of arithmetic operation: " + val.toString());
 	}
 
+
+
 	@Override
 	public Object visit(DrohneCommandSeqNode node) {
-		return null;
+		List<DrohneCommandType> scans = new ArrayList<>();
+		DrohneCommandType prev = null;
+
+		int x = context.drohne().getX();
+		int y = context.drohne().getY();
+		int z = context.drohne().getZ();
+
+		for (var command : node.commands()) {
+			if (command == DrohneCommandType.BREAK_SEQ) {
+				if (mazeService.distToNearestObstacle(prev, x, y, z) == 1) break;
+			}
+
+			switch (command) {
+				case SCAN_FORWARD, SCAN_BACK, SCAN_DOWN, SCAN_UP, SCAN_LEFT, SCAN_RIGHT, GET_POS ->
+					scans.add(command);
+				case MOVE_UP, MOVE_DOWN, MOVE_FORWARD, MOVE_BACK, MOVE_RIGHT, MOVE_LEFT ->
+					mazeService.moveDrohne(command);
+			}
+
+			prev = command;
+		}
+
+		if (scans.isEmpty()) return null;
+
+		List<Object> res = new ArrayList<>();
+
+		x = context.drohne().getX();
+		y = context.drohne().getY();
+		z = context.drohne().getZ();
+
+		for (var scan : scans) {
+			if (scan == DrohneCommandType.GET_POS) {
+				res.add(context.getCell(x, y, z));
+			} else {
+				res.add(mazeService.distToNearestObstacle(scan, x, y, z));
+			}
+		}
+
+		return res;
 	}
 
 	@Override
@@ -63,8 +106,9 @@ public class Interpreter implements ASTVisitor<Object> {
 	@Override
 	public Object visit(ArrayAccessNode node) {
 		var array = (Array) context.getVariable(node.name()).getValue();
-		int index = (int) node.index().accept(this);
-		return array.data().get(index);
+		List<Integer> indices = new ArrayList<>();
+		node.indices().forEach(index -> indices.add(castToInteger(index.accept(this))));
+		return array.get(indices);
 	}
 
 	@Override
@@ -99,22 +143,12 @@ public class Interpreter implements ASTVisitor<Object> {
 	@Override
 	public Object visit(CellPropertyAccess node) {
 		Cell cell = (Cell) node.cell().accept(this);
-		switch (node.property()) {
-			case X -> {
-				return cell.x();
-			}
-			case Y -> {
-				return cell.y();
-			}
-			case Z -> {
-				return cell.z();
-			}
-			case IS_OBSTACLE -> {
-				return cell.isObstacle();
-			}
-		}
-
-		throw new RuntimeException("unknown cell property: " + node.property());
+		return switch (node.property()) {
+			case X -> cell.x();
+			case Y -> cell.y();
+			case Z -> cell.z();
+			case IS_OBSTACLE -> cell.isObstacle();
+		};
 	}
 
 	@Override
@@ -127,7 +161,7 @@ public class Interpreter implements ASTVisitor<Object> {
 			innerContext.addVariable(new Variable(prototype.args().get(i), val));
 		}
 
-		Interpreter innerInterpreter = new Interpreter(innerContext);
+		Interpreter innerInterpreter = new Interpreter(innerContext, this.mazeService);
 
 		for (var statement : prototype.body()) {
 			Object res = statement.accept(innerInterpreter);
@@ -172,6 +206,11 @@ public class Interpreter implements ASTVisitor<Object> {
 	}
 
 	@Override
+	public Object visit(BreakNode node) {
+		return node;
+	}
+
+	@Override
 	public Object visit(FuncDeclNode node) {
 		context.addFunction(node);
 		return null;
@@ -183,15 +222,11 @@ public class Interpreter implements ASTVisitor<Object> {
 			Interpreter inner = new Interpreter(this);
 
 			for (var statement : node.body()) {
-				if (statement instanceof ReturnStatementNode ret) {
-					return ret;
-				}
+				if (statement instanceof BreakNode || statement instanceof ReturnStatementNode) return statement;
 
 				Object res = statement.accept(inner);
 
-				if (res instanceof ReturnStatementNode ret) {
-					return ret;
-				}
+				if (res instanceof BreakNode || res instanceof ReturnStatementNode) return statement;
 			}
 		}
 		return null;
@@ -209,15 +244,13 @@ public class Interpreter implements ASTVisitor<Object> {
 
 			while ((int) inner.context.getVariable(iterator).getValue() < end) {
 				for (var statement : node.body()) {
-					if (statement instanceof ReturnStatementNode ret) {
-						return ret;
-					}
+					if (statement instanceof BreakNode) break;
+					if (statement instanceof ReturnStatementNode) return statement;
 
 					Object res = statement.accept(inner);
 
-					if (res instanceof ReturnStatementNode ret) {
-						return ret;
-					}
+					if (res instanceof BreakNode) break;
+					if (res instanceof ReturnStatementNode) return res;
 				}
 			}
 		}
@@ -227,8 +260,7 @@ public class Interpreter implements ASTVisitor<Object> {
 
 	@Override
 	public Object visit(ProgramNode node) {
-		node.functions().forEach(func -> func.accept(this));
-		node.statements().forEach(statement -> statement.accept(this));
+		node.body().forEach(statement -> statement.accept(this));
 		return null;
 	}
 

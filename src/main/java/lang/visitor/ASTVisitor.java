@@ -19,6 +19,7 @@ public interface ASTVisitor<T> {
 	T visit(UnExprNode node);
 	T visit(VarAccessNode node);
 	T visit(ArrayDeclNode node);
+	T visit(BreakNode node);
 	T visit(FuncDeclNode node);
 	T visit(IfNode node);
 	T visit(LoopNode node);
