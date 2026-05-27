@@ -1,4 +1,4 @@
-package lang.structures;
+package structures;
 
 public record Cell(
 		int x,
