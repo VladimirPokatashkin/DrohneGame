@@ -1,0 +1,118 @@
+seisu x = 1;
+seisu y = 1;
+seisu z = 0;
+
+seisu exit1_x = 6;
+seisu exit1_y = 1;
+seisu exit1_z = 2;
+
+seisu exit2_x = 8;
+seisu exit2_y = 8;
+seisu exit2_z = 0;
+
+hairetsu visited = { 10, 10, 5 };
+
+shuki step = 0 : 500 kido
+
+
+    ronri x1_match = ~(x < exit1_x) ^ ~(x > exit1_x);
+    ronri y1_match = ~(y < exit1_y) ^ ~(y > exit1_y);
+    ronri z1_match = ~(z < exit1_z) ^ ~(z > exit1_z);
+    ronri on_exit1 = x1_match ^ y1_match ^ z1_match;
+
+
+    ronri x2_match = ~(x < exit2_x) ^ ~(x > exit2_x);
+    ronri y2_match = ~(y < exit2_y) ^ ~(y > exit2_y);
+    ronri z2_match = ~(z < exit2_z) ^ ~(z > exit2_z);
+    ronri on_exit2 = x2_match ^ y2_match ^ z2_match;
+
+
+    sorenara on_exit1 v on_exit2 kido
+        kowasu;
+    shushi
+
+
+
+
+    visited[x, y, z] = visited[x, y, z] + 1;
+
+    seisu min_val = 999;
+
+    ronri go_right   = uso;
+    ronri go_left    = uso;
+    ronri go_down    = uso;
+    ronri go_up      = uso;
+    ronri go_forward = uso;
+    ronri go_back    = uso;
+
+
+    ronri path_to_exit = uso;
+
+
+    sorenara { >_0 } < 0 kido go_right = shinri; path_to_exit = shinri; shushi
+    sorenara { <_0 } < 0 kido go_left = shinri; path_to_exit = shinri; shushi
+    sorenara { v_0 } < 0 kido go_down = shinri; path_to_exit = shinri; shushi
+    sorenara { ^_0 } < 0 kido go_up = shinri; path_to_exit = shinri; shushi
+    sorenara { o_0 } < 0 kido go_forward = shinri; path_to_exit = shinri; shushi
+    sorenara { ~_0 } < 0 kido go_back = shinri; path_to_exit = shinri; shushi
+
+
+    sorenara ~path_to_exit kido
+        sorenara { >_0 } > 1 kido
+            seisu v = visited[x + 1, y, z];
+            sorenara v < min_val kido
+                min_val = v; go_right = shinri;
+                go_left = uso; go_down = uso; go_up = uso; go_forward = uso; go_back = uso;
+            shushi
+        shushi
+
+        sorenara { <_0 } > 1 kido
+            seisu v = visited[x - 1, y, z];
+            sorenara v < min_val kido
+                min_val = v; go_left = shinri;
+                go_right = uso; go_down = uso; go_up = uso; go_forward = uso; go_back = uso;
+            shushi
+        shushi
+
+        sorenara { v_0 } > 1 kido
+            seisu v = visited[x, y + 1, z];
+            sorenara v < min_val kido
+                min_val = v; go_down = shinri;
+                go_right = uso; go_left = uso; go_up = uso; go_forward = uso; go_back = uso;
+            shushi
+        shushi
+
+        sorenara { ^_0 } > 1 kido
+            seisu v = visited[x, y - 1, z];
+            sorenara v < min_val kido
+                min_val = v; go_up = shinri;
+                go_right = uso; go_left = uso; go_down = uso; go_forward = uso; go_back = uso;
+            shushi
+        shushi
+
+        sorenara { o_0 } > 1 kido
+            seisu v = visited[x, y, z + 1];
+            sorenara v < min_val kido
+                min_val = v; go_forward = shinri;
+                go_right = uso; go_left = uso; go_down = uso; go_up = uso; go_back = uso;
+            shushi
+        shushi
+
+        sorenara { ~_0 } > 1 kido
+            seisu v = visited[x, y, z - 1];
+            sorenara v < min_val kido
+                min_val = v; go_back = shinri;
+                go_right = uso; go_left = uso; go_down = uso; go_up = uso; go_forward = uso;
+            shushi
+        shushi
+    shushi
+
+
+    sorenara go_right kido { >_> }; x = x + 1; shushi
+    sorenara go_left  kido { <_< }; x = x - 1; shushi
+    sorenara go_down  kido { v_v }; y = y + 1; shushi
+    sorenara go_up    kido { ^_^ }; y = y - 1; shushi
+    sorenara go_forward kido { o_o }; z = z + 1; shushi
+    sorenara go_back  kido { ~_~ }; z = z - 1; shushi
+
+shushi
