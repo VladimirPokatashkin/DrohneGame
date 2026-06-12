@@ -24,11 +24,13 @@ public class GameWindow extends JPanel implements DrohneObserver {
 
 		setPreferredSize(new Dimension(map[0][0].length * TILE_SIZE, map[0].length * TILE_SIZE));
 
-		animationTimer = new Timer(300, _ -> {
+		animationTimer = new Timer(300, e -> {
 			if (!actionQueue.isEmpty()) {
 				Runnable action = actionQueue.poll();
 				action.run();
 				repaint();
+			} else {
+				((Timer) e.getSource()).stop();
 			}
 		});
 	}
@@ -70,8 +72,10 @@ public class GameWindow extends JPanel implements DrohneObserver {
 			for (int x = 0; x < currentLayer[y].length; x++) {
 				if (currentLayer[y][x] == '#') {
 					g2d.setColor(Color.DARK_GRAY);
-				} else {
+				} else if (currentLayer[y][x] == '.') {
 					g2d.setColor(Color.LIGHT_GRAY);
+				} else {
+					g2d.setColor(Color.GREEN);
 				}
 				g2d.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 				g2d.setColor(Color.BLACK);

@@ -2,7 +2,6 @@ package lang.syntaxtree.expression;
 
 import lang.visitor.ASTVisitor;
 import lombok.AllArgsConstructor;
-import lombok.Setter;
 
 @AllArgsConstructor
 public class TypeComparisonNode implements Expression {
@@ -10,12 +9,7 @@ public class TypeComparisonNode implements Expression {
 	private int column;
 	private Expression left;
 	private Expression right;
-	@Setter
-	private boolean result;
 
-	public TypeComparisonNode(int line, int column, Expression left, Expression right) {
-		this(line, column, left, right, false);
-	}
 
 	@Override
 	public int line() {
@@ -33,10 +27,6 @@ public class TypeComparisonNode implements Expression {
 
 	public Expression right() {
 		return right;
-	}
-
-	public boolean result() {
-		return result;
 	}
 
 	@Override

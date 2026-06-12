@@ -1,23 +1,21 @@
 package lang.interpreter;
 
+import lang.enums.DrohneCommandType;
 import lang.interpreter.symbols.Variable;
-import other.Pair;
+import service.MazeService;
 import structures.Cell;
-import structures.Drohne;
-import structures.Maze;
 import lang.syntaxtree.statement.FuncDeclNode;
 
 public record RuntimeContext(
-		Maze maze,
-		Drohne drohne,
+		MazeService mazeService,
 		RuntimeSymbolTable symbolTable
 ) {
 	public RuntimeContext(RuntimeContext other) {
-		this(other.maze, other.drohne, new RuntimeSymbolTable(other.symbolTable));
+		this(other.mazeService, new RuntimeSymbolTable(other.symbolTable));
 	}
 
-	public RuntimeContext(Pair<Maze, Drohne> pair) {
-		this(pair.first, pair.second, new RuntimeSymbolTable());
+	public RuntimeContext(MazeService mazeService) {
+		this(mazeService, new RuntimeSymbolTable());
 	}
 
 	public void addFunction(FuncDeclNode node) {
@@ -32,6 +30,26 @@ public record RuntimeContext(
 		symbolTable.changeValueOf(name, newValue);
 	}
 
+	public void moveDrohne(DrohneCommandType direction) {
+		mazeService.moveDrohne(direction);
+	}
+
+	public int distToNearestObstacle(DrohneCommandType scan, int x, int y, int z) {
+		return mazeService.distToNearestObstacle(scan, x, y, z);
+	}
+
+	public int getDrohneX() {
+		return mazeService.getDrohneX();
+	}
+
+	public int getDrohneY() {
+		return mazeService.getDrohneY();
+	}
+
+	public int getDrohneZ() {
+		return mazeService.getDrohneZ();
+	}
+
 	public Variable getVariable(String name) {
 		return symbolTable.getVariable(name);
 	}
@@ -41,10 +59,6 @@ public record RuntimeContext(
 	}
 
 	public Cell getCell(int x, int y, int z) {
-		return maze.get(x, y, z);
-	}
-
-	public boolean isCellObstacle(int x, int y, int z) {
-		return maze.isObstacle(x, y, z);
+		return mazeService.getCell(x, y, z);
 	}
 }

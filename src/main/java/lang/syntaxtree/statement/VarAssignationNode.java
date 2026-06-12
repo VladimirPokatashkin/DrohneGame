@@ -11,6 +11,6 @@ public record VarAssignationNode(
 ) implements Statement {
 	@Override
 	public <T> T accept(ASTVisitor<T> visitor) {
-		return null;
+		return visitor.visit(this);
 	}
 }

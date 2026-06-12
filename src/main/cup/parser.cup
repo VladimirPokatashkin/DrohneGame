@@ -40,6 +40,7 @@ non terminal Expression expression;
 
 non terminal DrohneCommandSeqNode drohne_command_sequence;
 non terminal ArrayDeclNode array_declaration;
+non terminal ArrayAssignNode array_assignation;
 non terminal BreakNode break_statement;
 non terminal FuncDeclNode function_declaration;
 non terminal FuncCallNode function_call;
@@ -130,6 +131,8 @@ drohne_command_list ::= drohne_command_list:list COMMA single_drohne_command:c
 statement ::=
       drohne_command_sequence:s SEMI {: RESULT = s; :}
     | array_declaration:a            {: RESULT = a; :}
+    | array_assignation:a            {: RESULT = a; :}
+    | break_statement:b              {: RESULT = b; :}
     | function_declaration:f         {: RESULT = f; :}
     | if_statement:i                 {: RESULT = i; :}
     | loop_statement:l               {: RESULT = l; :}
@@ -176,6 +179,12 @@ array_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN LBRACE expression_li
            throw new SyntaxException("syntax error: array must be of type \"hairetsu\" on line " + tleft + ", column " + tright + ".");
        }
        RESULT = new ArrayDeclNode(idleft, idright, id, sizes);
+    :}
+;
+
+array_assignation ::= IDENTIFIER:id LBRACKET expression_list:indices RBRACKET ASSIGN expression:e SEMI
+    {:
+      RESULT = new ArrayAssignNode(idleft, idright, id, indices, e);
     :}
 ;
 
@@ -268,6 +277,9 @@ expression ::=
     | JIGEN IDENTIFIER:id
       {: RESULT = new UnExprNode(idleft, idright, new VarAccessNode(idleft, idright, id), UnOperator.JIGEN); :}
 
+    | LPAREN expression:e RPAREN
+      {: RESULT = e; :}
+
     | IDENTIFIER:id LBRACKET expression_list:indices RBRACKET
       {: RESULT = new ArrayAccessNode(idleft, idright, id, indices); :}
 
@@ -288,7 +300,7 @@ expression ::=
     | function_call:c
       {: RESULT = c; :}
 
-    | RUIKEI LBRACE expression:first expression:second RBRACE
+    | RUIKEI LBRACE expression:first COMMA expression:second RBRACE
       {:
         RESULT = new TypeComparisonNode(firstleft, firstright, first, second);
       :}

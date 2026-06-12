@@ -32,7 +32,8 @@ public record SemanticSymbolTable(
 	}
 
 	public DataType typeOf(String name) {
-		return variables.get(name);
+		if (variables.containsKey(name)) return variables.get(name);
+		return functions.get(name).returnType();
 	}
 
 	public void addVariable(String name, DataType type) {
