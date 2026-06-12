@@ -1,0 +1,9 @@
+seisu kansu f(seisu num) kido
+    sorenara ~(num < 0) ^ ~(num > 0) v ~(num < 1) ^ ~(num > 1) kido
+        modoru 1;
+    shushi
+
+    modoru f(num - 1) + f(num - 2);
+shushi
+
+seisu x = f(6);
