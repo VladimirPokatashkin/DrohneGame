@@ -16,4 +16,11 @@ public record DrohneCommandSeqNode(
 	public <T> T accept(ASTVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		commands.forEach(command -> sb.append(command.toString()));
+		return sb.toString();
+	}
 }
