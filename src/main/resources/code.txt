@@ -1,6 +1,6 @@
-seisu x = 1;
-seisu y = 2;
-seisu z = 1;
+seisu x = { *_* } => x;
+seisu y = { *_* } => y;
+seisu z = { *_* } => z;
 
 seisu exit1_x = 6;
 seisu exit1_y = 1;
@@ -109,12 +109,16 @@ shuki step = 0 : 500 kido
     shushi
 
 
-    sorenara go_right   kido { >_> }; x = x + 1; shushi
-    sorenara go_left    kido { <_< }; x = x - 1; shushi
-    sorenara go_forward kido { o_o }; y = y - 1; shushi
-    sorenara go_back    kido { ~_~ }; y = y + 1; shushi
-    sorenara go_up      kido { ^_^ }; z = z + 1; shushi
-    sorenara go_down    kido { v_v }; z = z - 1; shushi
+    sorenara go_right   kido { >_> }; shushi
+    sorenara go_left    kido { <_< }; shushi
+    sorenara go_forward kido { o_o }; shushi
+    sorenara go_back    kido { ~_~ }; shushi
+    sorenara go_up      kido { ^_^ }; shushi
+    sorenara go_down    kido { v_v }; shushi
+
+    x = { *_* } => x;
+    y = { *_* } => y;
+    z = { *_* } => z;
 
     step = step + 1;
 shushi

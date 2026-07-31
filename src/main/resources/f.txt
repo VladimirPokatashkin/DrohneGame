@@ -6,4 +6,4 @@ seisu kansu f(seisu num) kido
     modoru f(num - 1) + f(num - 2);
 shushi
 
-seisu x = f(6);
+seisu x = f(7) -1;

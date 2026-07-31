@@ -1,5 +1,6 @@
 package service;
 
+import org.springframework.stereotype.Service;
 import other.Pair;
 import structures.Cell;
 import structures.Drohne;
@@ -9,8 +10,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+
+@Service
 public class MazeFactory {
-	public static Pair<Maze, Drohne> create(List<List<String>> levels) throws IOException {
+	public Pair<Maze, Drohne> create(List<List<String>> levels) throws IOException {
 		int X = levels.getFirst().getFirst().length();
 		int Y = levels.getFirst().size();
 		int Z = levels.size();
@@ -36,7 +39,7 @@ public class MazeFactory {
 							map[z][y][x] = new Cell(x, y, z, false);
 						}
 						case 'E' -> {
-							Cell cell = new Cell(x, y, z, false);
+							var cell = new Cell(x, y, z, false);
 							map[z][y][x] = cell;
 							exits.add(cell);
 						}

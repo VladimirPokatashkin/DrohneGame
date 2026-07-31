@@ -1,7 +1,8 @@
 package observer;
 
 public interface DrohneObserver {
-	void xChanged(int newX);
-	void yChanged(int newY);
-	void zChanged(int newZ);
+	void start(int x, int y, int z);
+	void moved(int x, int y, int z);
+	void crashed(int x, int y, int z);
+	void scanned(int x, int y, int z, String direction);
 }

@@ -2,19 +2,19 @@ package lang.interpreter;
 
 import lang.enums.DrohneCommandType;
 import lang.interpreter.symbols.Variable;
-import service.MazeService;
+import service.IMazeService;
 import structures.Cell;
 import lang.syntaxtree.statement.FuncDeclNode;
 
 public record RuntimeContext(
-		MazeService mazeService,
+		IMazeService mazeService,
 		RuntimeSymbolTable symbolTable
 ) {
 	public RuntimeContext(RuntimeContext other) {
 		this(other.mazeService, new RuntimeSymbolTable(other.symbolTable));
 	}
 
-	public RuntimeContext(MazeService mazeService) {
+	public RuntimeContext(IMazeService mazeService) {
 		this(mazeService, new RuntimeSymbolTable());
 	}
 
