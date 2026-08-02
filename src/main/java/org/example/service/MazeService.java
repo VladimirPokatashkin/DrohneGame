@@ -1,27 +1,28 @@
-package service;
+package org.example.service;
 
-import exceptions.CrashException;
-import lang.enums.DrohneCommandType;
+import lombok.NoArgsConstructor;
+import org.example.exceptions.CrashException;
+import org.example.lang.enums.DrohneCommandType;
 import lombok.Getter;
-import observer.DrohneObserver;
+import org.example.observer.DrohneObserver;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.annotation.RequestScope;
-import other.Pair;
-import structures.Cell;
-import structures.Drohne;
-import structures.Maze;
-import lombok.AllArgsConstructor;
+import org.example.other.Pair;
+import org.example.structures.Cell;
+import org.example.structures.Drohne;
+import org.example.structures.Maze;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequestScope
-@AllArgsConstructor
+@NoArgsConstructor
 public class MazeService implements IMazeService {
 	private Maze maze;
 	@Getter
 	private Drohne drohne;
-	private List<DrohneObserver> observers;
+	private final List<DrohneObserver> observers = new ArrayList<>();
 
 	private int distToNearestLeftObstacle(int x, int y, int z) {
 		Cell[][][] map = maze.map();
@@ -81,13 +82,14 @@ public class MazeService implements IMazeService {
 	public void init(Pair<Maze, Drohne> pair) {
 		maze = pair.first;
 		drohne = pair.second;
+		observers.clear();
 	}
 
 
 	@Override
 	public void attach(DrohneObserver observer) {
-
 		observers.add(observer);
+		observer.start(drohne.getX(), drohne.getY(), drohne.getZ());
 	}
 
 	@Override

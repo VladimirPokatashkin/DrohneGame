@@ -1,6 +1,6 @@
-package observer;
+package org.example.observer;
 
-import dto.StepDTO;
+import org.example.dto.StepDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

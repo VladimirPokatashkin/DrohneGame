@@ -1,22 +1,24 @@
-package service;
+package org.example.service;
 
-import dto.RunRequest;
-import dto.RunResponse;
-import exceptions.CrashException;
-import lang.exceptions.SemanticException;
-import lang.interpreter.Interpreter;
-import lang.interpreter.RuntimeContext;
+import org.example.dto.RunRequest;
+import org.example.dto.RunResponse;
+import org.example.exceptions.CrashException;
+import org.example.lang.exceptions.SemanticException;
+import org.example.lang.interpreter.Interpreter;
+import org.example.lang.interpreter.RuntimeContext;
 import lang.parser.Lexer;
 import lang.parser.Parser;
-import lang.semanticanalyzer.SemanticAnalyzer;
-import lang.syntaxtree.statement.ProgramNode;
-import loader.Loader;
+import org.example.lang.semanticanalyzer.SemanticAnalyzer;
+import org.example.lang.syntaxtree.statement.ProgramNode;
+import org.example.loader.Loader;
 import lombok.AllArgsConstructor;
-import observer.StepRecorder;
+import org.example.observer.StepRecorder;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.nio.file.Path;
 import java.util.List;
 
 @Service
@@ -29,9 +31,8 @@ public class InterpreterService {
 	public RunResponse execute(RunRequest request) {
 		var observer = new StepRecorder();
 		try {
-			Path root = Path.of(System.getProperty("user.dir"));
-			List<List<String>> levels = Loader.loadMaze(root.resolve("src/main/resources/maze.txt"));
-
+			var resource = new ClassPathResource("maze.txt");
+			List<List<String>> levels = Loader.loadMaze(new BufferedReader(new InputStreamReader(resource.getInputStream())));
 
 			mazeService.init(mazeFactory.create(levels));
 			mazeService.attach(observer);
