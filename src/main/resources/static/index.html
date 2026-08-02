@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Drohne Simulator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+        body { display: flex; height: 100vh; background: #1e1e1e; color: #fff; }
+
+        /* Левая панель - Код */
+        .editor-panel { width: 40%; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-right: 2px solid #333; }
+        textarea { flex: 1; background: #2d2d2d; color: #00ff66; border: 1px solid #444; padding: 10px; font-size: 14px; resize: none; border-radius: 4px; }
+        button { padding: 12px; background: #007acc; color: white; border: none; font-size: 16px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button:hover { background: #005999; }
+        .console { height: 100px; background: #000; color: #ff5555; padding: 10px; border-radius: 4px; overflow-y: auto; white-space: pre-wrap; }
+
+        /* Правая панель - Лабиринт */
+        .viewer-panel { width: 60%; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .controls { margin-bottom: 15px; }
+        .grid-container { display: grid; gap: 2px; background: #333; border: 2px solid #555; padding: 2px; }
+        .cell { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        /* Цвета элементов лабиринта */
+        .cell.wall { background: #444; }
+        .cell.path { background: #111; }
+        .cell.start { background: #1b5e20; }
+        .cell.exit { background: #b71c1c; }
+        .cell.drone { background: #00b0ff; border-radius: 50%; box-shadow: 0 0 10px #00b0ff; }
+    </style>
+</head>
+<body>
+
+<!-- Панель ввода кода -->
+<div class="editor-panel">
+    <h2>Редактор кода DSL</h2>
+    <textarea id="codeEditor" placeholder="Введи код aboba..."></textarea>
+    <button id="runBtn" onclick="runScript()">▶ Запустить код</button>
+    <div id="console" class="console">Логи и ошибки появятся здесь...</div>
+</div>
+
+<!-- Панель визуализации лабиринта -->
+<div class="viewer-panel">
+    <div class="controls">
+        <label>Уровень Z: </label>
+        <select id="levelSelect" onchange="renderCurrentLevel()"></select>
+    </div>
+    <div id="mazeGrid" class="grid-container"></div>
+</div>
+
+<script>
+    let mazeData = []; // Трехмерный массив уровней от сервера
+    let currentZ = 0;
+    let animationTimer = null;
+    let dronePos = null;
+
+
+    // 1. При загрузке страницы скачиваем структуру лабиринта
+    window.onload = async () => {
+        try {
+            const response = await fetch('/api/maze/maze');
+            const data = await response.json();
+            mazeData = data.levels; // List<List<String>>
+            console.log("Пришедший JSON от сервера:", data);
+
+            dronePos = findStartPos();
+            initLevelSelector();
+            renderCurrentLevel();
+        } catch (err) {
+            logError("Не удалось загрузить лабиринт: " + err);
+        }
+    };
+
+    // Находим координаты стартовой позиции 'S' в массиве mazeData
+    function findStartPos() {
+        for (let z = 0; z < mazeData.length; z++) {
+            for (let y = 0; y < mazeData[z].length; y++) {
+                for (let x = 0; x < mazeData[z][y].length; x++) {
+                    if (mazeData[z][y][x] === 'S') {
+                        return { x: x, y: y, z: z };
+                    }
+                }
+            }
+        }
+        return { x: 0, y: 0, z: 0 }; // Дефолт, если S не найден
+    }
+
+
+
+    function initLevelSelector() {
+        const select = document.getElementById('levelSelect');
+        select.innerHTML = '';
+        for (let z = 0; z < mazeData.length; z++) {
+            const opt = document.createElement('option');
+            opt.value = z;
+            opt.textContent = `Слой Z = ${z}`;
+            select.appendChild(opt);
+        }
+    }
+
+    // 2. Отрисовка выбранного слоя лабиринта
+    function renderCurrentLevel() {
+        currentZ = parseInt(document.getElementById('levelSelect').value) || 0;
+        const grid = document.getElementById('mazeGrid');
+        const level = mazeData[currentZ]; // Массив строк для выбранного Z
+
+        if (!level) return;
+
+        const height = level.length;
+        const width = level[0].length;
+
+        grid.style.gridTemplateColumns = `repeat(${width}, 30px)`;
+        grid.innerHTML = '';
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const char = level[y][x];
+                const cell = document.createElement('div');
+                cell.className = 'cell ';
+
+                if (char === '#') cell.className += 'wall';
+                else if (char === 'S') cell.className += 'start';
+                else if (char === 'E') cell.className += 'exit';
+                else cell.className += 'path';
+
+                // Если дрон находится на этом слое и в этих координатах
+                if (dronePos.x === x && dronePos.y === y && dronePos.z === currentZ) {
+                    cell.className += ' drone';
+                    cell.textContent = '🛸';
+                }
+
+                cell.id = `cell-${x}-${y}-${currentZ}`;
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    // 3. Отправка кода на Spring Boot сервер
+    async function runScript() {
+        const code = document.getElementById('codeEditor').value;
+        const consoleDiv = document.getElementById('console');
+        consoleDiv.style.color = '#00ff66';
+        consoleDiv.textContent = "Выполнение...";
+
+        if (animationTimer) clearInterval(animationTimer);
+
+        try {
+            const response = await fetch('/api/drohne/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            });
+
+            const result = await response.json();
+            console.log("Полученные шаги от сервера:", result.steps);
+
+            if (result.status && result.status !== "") {
+                consoleDiv.style.color = '#ff5555';
+                consoleDiv.textContent = `Ошибка [${result.status}]: ${result.errorMessage}`;
+            } else {
+                consoleDiv.textContent = "Код успешно выполнен! Запуск анимации...";
+            }
+
+            // 4. Запуск пошаговой анимации
+            animateSteps(result.steps);
+
+        } catch (err) {
+            consoleDiv.style.color = '#ff5555';
+            consoleDiv.textContent = "Ошибка сети: " + err;
+        }
+    }
+
+    // 5. Движок анимации шагов дрона
+    function animateSteps(steps) {
+        if (!steps || steps.length === 0) return;
+
+        let stepIndex = 0;
+
+        animationTimer = setInterval(() => {
+            if (stepIndex >= steps.length) {
+                clearInterval(animationTimer);
+                return;
+            }
+
+            const step = steps[stepIndex];
+            dronePos = { x: step.x, y: step.y, z: step.z };
+
+            // Если дрон перешел на другой слой Z, автоматически переключаем слой в UI
+            if (document.getElementById('levelSelect').value != step.z) {
+                document.getElementById('levelSelect').value = step.z;
+            }
+
+            renderCurrentLevel();
+            stepIndex++;
+        }, 30); // Скорость анимации: 300 миллисекунд на 1 шаг
+    }
+
+    function logError(msg) {
+        document.getElementById('console').textContent = msg;
+    }
+</script>
+</body>
+</html>
