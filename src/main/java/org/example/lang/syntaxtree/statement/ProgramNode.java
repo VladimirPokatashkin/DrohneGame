@@ -1,0 +1,24 @@
+package org.example.lang.syntaxtree.statement;
+
+import org.example.lang.visitor.ASTVisitor;
+
+import java.util.List;
+
+public record ProgramNode (
+		List<Statement> body
+)implements Statement {
+	@Override
+	public int line() {
+		return 0;
+	}
+
+	@Override
+	public int column() {
+		return 0;
+	}
+
+	@Override
+	public <T> T accept(ASTVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+}

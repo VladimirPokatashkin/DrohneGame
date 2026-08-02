@@ -1,0 +1,53 @@
+package org.example.service;
+
+import org.springframework.stereotype.Service;
+import org.example.other.Pair;
+import org.example.structures.Cell;
+import org.example.structures.Drohne;
+import org.example.structures.Maze;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+
+@Service
+public class MazeFactory {
+	public Pair<Maze, Drohne> create(List<List<String>> levels) throws IOException {
+		int X = levels.get(0).get(0).length();
+		int Y = levels.get(0).size();
+		int Z = levels.size();
+
+		Cell[][][] map = new Cell[Z][Y][X];
+		List<Cell> exits = new ArrayList<>();
+		Drohne drohne = null;
+
+		for (int z = 0; z < Z; z++) {
+			for (int y = 0; y < Y; y++) {
+				for (int x = 0; x < X; x++) {
+					char c = levels.get(z).get(y).charAt(x);
+
+					switch (c) {
+						case '#' -> map[z][y][x] = new Cell(x, y, z, true);
+						case '.' -> map[z][y][x] = new Cell(x, y, z, false);
+						case 'S' -> {
+							if (drohne != null) {
+								throw new IOException("drohne declared twice.");
+							}
+
+							drohne = new Drohne(x, y, z);
+							map[z][y][x] = new Cell(x, y, z, false);
+						}
+						case 'E' -> {
+							var cell = new Cell(x, y, z, false);
+							map[z][y][x] = cell;
+							exits.add(cell);
+						}
+					}
+				}
+			}
+		}
+
+		return new Pair<>(new Maze(map, exits), drohne);
+	}
+}
