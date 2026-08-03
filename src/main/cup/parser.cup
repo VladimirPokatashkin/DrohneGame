@@ -1,19 +1,34 @@
 package lang.parser;
 
 import java_cup.runtime.*;
-import lang.syntaxtree.statement.*;
-import lang.syntaxtree.expression.literal.*;
-import lang.syntaxtree.expression.*;
-import lang.syntaxtree.both.*;
-import lang.enums.*;
-import other.Pair;
+import org.example.lang.syntaxtree.statement.*;
+import org.example.lang.syntaxtree.expression.literal.*;
+import org.example.lang.syntaxtree.expression.*;
+import org.example.lang.syntaxtree.both.*;
+import org.example.lang.enums.*;
+import org.example.other.Pair;
 import java.util.ArrayList;
 import java.util.List;
-import lang.exceptions.SyntaxException;
+import org.example.lang.exceptions.SyntaxException;
 
 parser code {:
     private int parseHex(String hex) {
         return Integer.parseInt(hex.substring(1), 16);
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) throws SyntaxException {
+        int line = cur_token.left + 1;
+        int column = cur_token.right + 1;
+        Object value = cur_token.value;
+
+        String message = String.format(
+            "Syntax error at line %d, column %d near token '%s'",
+            line,
+            column,
+            (value != null ? value : "UNKNOWN")
+        );
+
+        throw new SyntaxException(message);
     }
 :}
 
@@ -40,7 +55,7 @@ non terminal Expression expression;
 
 non terminal DrohneCommandSeqNode drohne_command_sequence;
 non terminal ArrayDeclNode array_declaration;
-non terminal ArrayAssignNode array_assignation;
+non terminal ArrayAssignationNode array_assignation;
 non terminal BreakNode break_statement;
 non terminal FuncDeclNode function_declaration;
 non terminal FuncCallNode function_call;
@@ -184,7 +199,7 @@ array_declaration ::= type_specifier:t IDENTIFIER:id ASSIGN LBRACE expression_li
 
 array_assignation ::= IDENTIFIER:id LBRACKET expression_list:indices RBRACKET ASSIGN expression:e SEMI
     {:
-      RESULT = new ArrayAssignNode(idleft, idright, id, indices, e);
+      RESULT = new ArrayAssignationNode(idleft, idright, id, indices, e);
     :}
 ;
 

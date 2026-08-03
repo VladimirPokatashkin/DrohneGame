@@ -3,7 +3,9 @@ package org.example.service;
 import org.example.dto.RunRequest;
 import org.example.dto.RunResponse;
 import org.example.exceptions.CrashException;
+import org.example.lang.exceptions.LexicalException;
 import org.example.lang.exceptions.SemanticException;
+import org.example.lang.exceptions.SyntaxException;
 import org.example.lang.interpreter.Interpreter;
 import org.example.lang.interpreter.RuntimeContext;
 import lang.parser.Lexer;
@@ -48,6 +50,10 @@ public class InterpreterService {
 
 			return new RunResponse(observer.getSteps(), "", "");
 
+		} catch (LexicalException e) {
+			return new RunResponse(List.of(), "lexical error", e.getMessage());
+		} catch (SyntaxException e) {
+			return new RunResponse(List.of(), "syntax error", e.getMessage());
 		} catch (CrashException e) {
 			return new RunResponse(observer.getSteps(),"crashed", e.getMessage());
 		} catch (SemanticException e) {

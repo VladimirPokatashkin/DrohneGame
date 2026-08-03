@@ -55,13 +55,13 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 				returnStatementFound = true;
 
 				if (!areCompatibleTypes(type, node.returnType())) {
-					throw new SemanticException("invalid type of return statement in function \"" + node.name() + "\"", node.line());
+					throw new SemanticException("invalid type of return statement in function \"" + node.name() + "\"", node.line() + 1);
 				}
 			}
 		}
 
 		if (!returnStatementFound)  {
-			throw new SemanticException("missing modoru statement in function \"" + node.name() + "\"", node.line());
+			throw new SemanticException("missing modoru statement in function \"" + node.name() + "\"", node.line() + 1);
 		}
 	}
 
@@ -75,7 +75,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 		for (var command : node.commands()) {
 			if (command == DrohneCommandType.BREAK_SEQ) {
 				if (prev == null || prev.ordinal() < 7 || prev.ordinal() > 12) {
-					throw new SemanticException("break sequence operator must be after scan operator", node.line());
+					throw new SemanticException("break sequence operator must be after scan operator", node.line() + 1);
 				}
 			}
 
@@ -110,11 +110,11 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(ArrayAccessNode node) {
 		if (!env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: array \"" + node.name() + "\" was not declared in this scope.", node.line());
+			throw new SemanticException("error: array \"" + node.name() + "\" was not declared in this scope.", node.line() + 1);
 		}
 		node.indices().forEach(index -> {
 			if ((areCompatibleTypes(index.accept(this), DataType.SEISU))) {
-				throw new SemanticException("type of array index must be compatible to seisu.", node.line());
+				throw new SemanticException("type of array index must be compatible to seisu.", node.line() + 1);
 			}
 		});
 		return DataType.ANY;
@@ -128,13 +128,13 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 
 		if (operator == BinOperator.PLUS || operator == BinOperator.MINUS) {
 			if (!areCompatibleTypes(typeOfLeft, DataType.SEISU) || !areCompatibleTypes(typeOfRight, DataType.SEISU)) {
-				throw new SemanticException("error: invalid operand of arithmetic operation.", node.line());
+				throw new SemanticException("error: invalid operand of arithmetic operation.", node.line() + 1);
 			}
 			return DataType.SEISU;
 		}
 
 		if (!areCompatibleTypes(typeOfLeft, DataType.RONRI) || !areCompatibleTypes(typeOfRight, DataType.RONRI)) {
-			throw new SemanticException("error: invalid operand of boolean operation.", node.line());
+			throw new SemanticException("error: invalid operand of boolean operation.", node.line() + 1);
 		}
 
 		return DataType.RONRI;
@@ -148,12 +148,12 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(FuncCallNode node) {
 		if (!env.isFuncDeclared(node.name())) {
-			throw new SemanticException("error: function \"" + node.name() + "\" was not declared.", node.line());
+			throw new SemanticException("error: function \"" + node.name() + "\" was not declared.", node.line() + 1);
 		}
 
 		var declared = env.getFunction(node.name());
 		if (declared.args().size() != node.args().size()) {
-			throw new SemanticException("error: invalid arguments of \"" + declared.name() + "\" function", node.line());
+			throw new SemanticException("error: invalid arguments of \"" + declared.name() + "\" function", node.line() + 1);
 		}
 
 		for (int i = 0; i < node.args().size(); ++i) {
@@ -161,7 +161,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 			DataType expected = declared.args().get(i).first;
 
 			if (given != expected && !areCompatibleTypes(given, expected)) {
-				throw new SemanticException("error: invalid type of argument #" + i + " in function \"" + node.name() + "\"", node.line());
+				throw new SemanticException("error: invalid type of argument #" + i + " in function \"" + node.name() + "\"", node.line() + 1);
 			}
 		}
 		return env.typeOf(node.name());
@@ -176,11 +176,11 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	public DataType visit(UnExprNode node) {
 		DataType typeOfOperand = node.operand().accept(this);
 		if (node.operator() == UnOperator.JIGEN && typeOfOperand != DataType.HAIRETSU) {
-			throw new SemanticException("invalid argument of \"jigen\" operator (it must be hairetsu).", node.line());
+			throw new SemanticException("invalid argument of \"jigen\" operator (it must be hairetsu).", node.line() + 1);
 		}
 
 		if (node.operator() == UnOperator.NOT && !areCompatibleTypes(DataType.RONRI, typeOfOperand)) {
-			throw new SemanticException("invalid argument of \"not\" operator (it must be ronri or seisu).", node.line());
+			throw new SemanticException("invalid argument of \"not\" operator (it must be ronri or seisu).", node.line() + 1);
 		}
 		return node.operator() == UnOperator.NOT ? DataType.RONRI : DataType.SEISU;
 	}
@@ -188,7 +188,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(VarAccessNode node) {
 		if (!env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: variable \"" + node.name() + "\" was not declared.", node.line());
+			throw new SemanticException("error: variable \"" + node.name() + "\" was not declared.", node.line() + 1);
 		}
 		return env.typeOf(node.name());
 	}
@@ -196,7 +196,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(ArrayDeclNode node) {
 		if (env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: array \"" + node.name() + "\" was already declared", node.line());
+			throw new SemanticException("error: array \"" + node.name() + "\" was already declared", node.line() + 1);
 		}
 		env.addVariable(node.name(), DataType.HAIRETSU);
 		return DataType.HAIRETSU;
@@ -205,14 +205,14 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(ArrayAssignationNode node) {
 		if (!env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: array \"" + node.name() + "\" was not declared", node.line());
+			throw new SemanticException("error: array \"" + node.name() + "\" was not declared", node.line() + 1);
 		}
 		if (env.typeOf(node.name()) != DataType.HAIRETSU) {
-			throw new SemanticException("error: var \"" + node.name() + "\" is not an array", node.line());
+			throw new SemanticException("error: var \"" + node.name() + "\" is not an array", node.line() + 1);
 		}
 		node.indices().forEach(index -> {
 			if (!areCompatibleTypes(index.accept(this), DataType.SEISU)) {
-				throw new SemanticException("indices of hairetsu must be seisu", node.line());
+				throw new SemanticException("indices of hairetsu must be seisu", node.line() + 1);
 			}
 		});
 		return null;
@@ -221,7 +221,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(BreakNode node) {
 		if (loopDepth == 0) {
-			throw new SemanticException("kowasu statement must be inside shuki.", node.line());
+			throw new SemanticException("kowasu statement must be inside shuki.", node.line() + 1);
 		}
 		return null;
 	}
@@ -240,7 +240,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	public DataType visit(IfNode node) {
 		if (!areCompatibleTypes(node.condition().accept(this), DataType.RONRI)) {
 			throw new SemanticException(
-					"error: sorenara condition must be of type ronri or compatible to ronri.", node.line());
+					"error: sorenara condition must be of type ronri or compatible to ronri.", node.line() + 1);
 		}
 		analyzeInnerScope(node.body());
 		return null;
@@ -251,11 +251,11 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 		DataType typeOfBegin = node.begin().accept(this);
 		DataType typeOfEnd = node.end().accept(this);
 		if (!areCompatibleTypes(typeOfBegin, DataType.SEISU) || !areCompatibleTypes(typeOfEnd, DataType.SEISU)) {
-			throw new SemanticException("error: loop bounds must be of type seisu.", node.line());
+			throw new SemanticException("error: loop bounds must be of type seisu.", node.line() + 1);
 		}
 
 		if (env.isVarDeclared(node.iterator())) {
-			throw new SemanticException("error: variable \"" + node.iterator() + "\" was already declared.", node.line());
+			throw new SemanticException("error: variable \"" + node.iterator() + "\" was already declared.", node.line() + 1);
 		}
 
 		var innerAnalyzer = new SemanticAnalyzer(this);
@@ -288,10 +288,10 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(VarAssignationNode node) {
 		if (!env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: variable \"" + node.name() + "\" was not declared in this scope.", node.line());
+			throw new SemanticException("error: variable \"" + node.name() + "\" was not declared in this scope.", node.line() + 1);
 		}
 		if (!areCompatibleTypes(node.value().accept(this), env.typeOf(node.name()))) {
-			throw new SemanticException("error: invalid type of variable \"" + node.name() + "\" new value.", node.line());
+			throw new SemanticException("error: invalid type of variable \"" + node.name() + "\" new value.", node.line() + 1);
 		}
 		return null;
 	}
@@ -299,7 +299,7 @@ public class SemanticAnalyzer implements ASTVisitor<DataType> {
 	@Override
 	public DataType visit(VarDeclNode node) {
 		if (env.isVarDeclared(node.name())) {
-			throw new SemanticException("error: variable \"" + node.name() + "\" was already declared.", node.line());
+			throw new SemanticException("error: variable \"" + node.name() + "\" was already declared.", node.line() + 1);
 		}
 		env.addVariable(node.name(), node.type());
 		return node.type();

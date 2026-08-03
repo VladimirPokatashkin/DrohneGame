@@ -1,7 +1,7 @@
 package lang.parser;
 
 import java_cup.runtime.*;
-import lang.exceptions.LexicalException;
+import org.example.lang.exceptions.LexicalException;
 
 %%
 
@@ -91,4 +91,4 @@ HexLiteral     = x[0-9A-F]+
   {Space}   { }
 }
 
-[^]              { throw new LexicalException("Illegal character <"+yytext()+"> at line " + yyline); }
+[^]              { throw new LexicalException("Illegal character <"+yytext()+"> at line " + (yyline + 1)); }
